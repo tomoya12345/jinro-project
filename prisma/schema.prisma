@@ -1,0 +1,19 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 部屋情報（ゲームの全体状態）
+model Room {
+  id           String   @id @default(uuid())
+  roomNumber   String   @unique // 4桁の部屋番号など
+  phase        Int      @default(0) // 0:待機, 1:役職配布, 2:昼議論, 3:投票中, 4:夜行動, 5:ゲーム終了
+  dayCount     Int      @default(1) // 何日目か
+  winner       String?  // "VILLAGER" or "WEREWOLF"
+  
+  totalPlayers Int
+}
