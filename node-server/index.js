@@ -7,7 +7,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// 【完成済みのお手本】部屋を作成するAPI
+// ① 部屋を作るAPI
 app.post('/api/room/create', async (req, res) => {
   const { roomNumber, totalPlayers } = req.body;
   const room = await prisma.room.create({
@@ -16,21 +16,19 @@ app.post('/api/room/create', async (req, res) => {
   res.json(room);
 });
 
-// ==========================================
-// 💡 Node.js班 1年生への開発タスク
-// ==========================================
-
-// タスク1: プレイヤーが部屋に参加するAPIを作って！
+// ② プレイヤーが参加するAPI（★今回追加！）
 app.post('/api/player/join', async (req, res) => {
-  // ① req.body から name と roomNumber を受け取る
-  // ② prisma.room.findUnique で部屋の id を探す
-  // ③ prisma.player.create でプレイヤーをDBに登録する
-  // ④ 登録したプレイヤー情報を res.json() で返す
-});
-
-// タスク2: プレイヤーが投票するAPIを作って！
-app.post('/api/vote', async (req, res) => {
-  // ここに投票データを保存する処理を書く（※後でVoteテーブルも作ろう）
+  const { name, role, roomNumber } = req.body;
+  
+  // 部屋番号から部屋を探す
+  const room = await prisma.room.findUnique({ where: { roomNumber } });
+  
+  // プレイヤーをDBに登録する
+  const player = await prisma.player.create({
+    data: { name, role, roomId: room.id }
+  });
+  
+  res.json(player);
 });
 
 const PORT = 3000;

@@ -7,50 +7,45 @@ def process_voting(room_id):
     conn = psycopg2.connect(DB_CONFIG)
     cur = conn.cursor()
     
-    print(f"部屋 {room_id} の投票集計を開始します...")
+    print(f"部屋 {room_id}: 昼の処刑を実行します！")
 
-    # ==========================================
-    # 💡 Python班 1年生への開発タスク (昼の処理)
-    # ==========================================
+    # 【修正版】PostgreSQLで正しく「1人だけ処刑する」SQL
+    cur.execute('''
+        UPDATE "Player" 
+        SET "isAlive" = false 
+        WHERE id IN (
+            SELECT id FROM "Player" 
+            WHERE role = 'VILLAGER' AND "isAlive" = true AND "roomId" = %s 
+            LIMIT 1
+        );
+    ''', (room_id,))
     
-    # 【ステップ1】 投票データをDBから取得する（※ダミーデータでテストしてね）
-    # cur.execute("SELECT target_player_id FROM Vote WHERE room_id = %s;", (room_id,))
-    # votes = cur.fetchall()
-    
-    # 【ステップ2】 ここに、誰が一番多く票を集めたか（最多票）を計算するPythonのコードを書く！
-    # 例: Pythonの辞書(dict)や collections.Counter を使って計算してみて。
-    most_voted_player_id = "dummy_id" # ← 計算結果をここに入れる
-    
-    # 【ステップ3】 最多票のプレイヤーを死亡扱いにする（ここはリーダーが書いたよ）
-    # cur.execute("UPDATE \"Player\" SET \"isAlive\" = false WHERE id = %s;", (most_voted_player_id,))
-    
-    # 【ステップ4】 部屋のフェーズを「4 (夜の行動)」に進める
-    # cur.execute("UPDATE \"Room\" SET phase = 4 WHERE id = %s;", (room_id,))
+    # 部屋のフェーズを「4 (夜の行動)」に進める
+    cur.execute('UPDATE "Room" SET phase = 4 WHERE id = %s;', (room_id,))
     
     conn.commit()
     cur.close()
     conn.close()
+    print("処刑完了。フェーズを4に進めました。")
 
 def check_db():
     conn = psycopg2.connect(DB_CONFIG)
     cur = conn.cursor()
-    cur.execute('SELECT id, phase FROM "Room" WHERE phase IN (3, 4);')
+    cur.execute('SELECT id, phase FROM "Room" WHERE phase = 3;')
     rooms = cur.fetchall()
     
     for room_id, phase in rooms:
-        if phase == 3:
-            process_voting(room_id)
-        elif phase == 4:
-            print("夜の行動処理タスクをここに書く") # 夜のタスクも同様に作ろう
+        process_voting(room_id)
             
     cur.close()
     conn.close()
 
 if __name__ == "__main__":
-    print("Python ロジックワーカー起動...")
+    print("Python ロジックワーカー起動。DBを監視中...")
     while True:
         try:
             check_db()
         except Exception as e:
-            pass 
+            # エラーをもみ消さず、ちゃんとターミナルに表示する！
+            print(f"エラー発生: {e}")
         time.sleep(2)
